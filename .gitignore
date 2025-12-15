@@ -1,0 +1,62 @@
+# ==================== DEPENDENCIES ====================
+/backend/node_modules
+/frontend/node_modules
+node_modules/
+
+# ==================== ENVIRONMENT VARIABLES ====================
+/backend/.env
+/frontend/.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==================== BUILD OUTPUT ====================
+/frontend/build
+/backend/dist
+/backend/build
+build/
+dist/
+
+# ==================== LOGS ====================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log.*
+
+# ==================== IDE & EDITOR ====================
+/.vscode/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ==================== OS FILES ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==================== TESTING ====================
+/coverage
+/.nyc_output
+.coverage/
+*.test.js.snap
+
+# ==================== DOCUMENTATION ====================
+# Ignore semua file .md kecuali README.md
+*.md
+!README.md
+
+# ==================== MISC ====================
+/.pnp
+.pnp.js
+*.bak
+*.tmp
+*.temp

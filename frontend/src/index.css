@@ -1,0 +1,31 @@
+/* :root adalah tempat kita menyimpan variabel global */
+:root {
+  --color-primary: #2D6A4F;
+  --color-accent: #E9C46A;
+  --color-bg: #F8F9FA;
+  --color-text: #212529;
+  --color-success: #28A745;
+  --color-error: #DC3545;
+  --color-bg-secondary: #FFFFFF; /* Warna kartu/box */
+  --color-border: #E0E0E0;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Gunakan variabel CSS! */
+  background-color: var(--color-bg);
+  color: var(--color-text);
+
+  overflow-y: auto;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
