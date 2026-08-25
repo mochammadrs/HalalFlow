@@ -81,7 +81,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        <div className="auth-hero-footer">
+        <div style={{ zIndex: 1, color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
           © 2026 HalalFlow. Membantu keluarga muslim merencanakan masa depan finansial yang berkah.
         </div>
       </div>
