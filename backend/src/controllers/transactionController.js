@@ -32,16 +32,21 @@ exports.createTransaction = async (req, res, next) => {
     return res.status(400).json({ message: 'Semua field (amount, date, category_id, type) dibutuhkan' });
   }
 
+  const normalizedType = String(type).toUpperCase();
+  if (normalizedType !== 'INCOME' && normalizedType !== 'EXPENSE') {
+    return res.status(400).json({ message: 'Tipe transaksi harus INCOME atau EXPENSE' });
+  }
+
   try {
     const { rows } = await db.query(
       'INSERT INTO transactions (user_id, amount, description, date, category_id, type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [req.user.id, amount, description, date, category_id, type]
+      [req.user.id, amount, description, date, category_id, normalizedType]
     );
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
+    console.error('Create transaction error:', err);
+    res.status(500).json({ message: 'Gagal membuat transaksi di database' });
   }
 };
 
@@ -52,12 +57,17 @@ exports.updateTransaction = async (req, res, next) => {
   const { id } = req.params; // ID transaksi dari URL
   const { amount, description, date, category_id, type } = req.body;
 
+  const normalizedType = String(type).toUpperCase();
+  if (normalizedType !== 'INCOME' && normalizedType !== 'EXPENSE') {
+    return res.status(400).json({ message: 'Tipe transaksi harus INCOME atau EXPENSE' });
+  }
+
   try {
     const { rows } = await db.query(
       `UPDATE transactions 
        SET amount = $1, description = $2, date = $3, category_id = $4, type = $5 
        WHERE id = $6 AND user_id = $7 RETURNING *`,
-      [amount, description, date, category_id, type, id, req.user.id]
+      [amount, description, date, category_id, normalizedType, id, req.user.id]
     );
 
     if (rows.length === 0) {

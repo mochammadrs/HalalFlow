@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HalalFlow - Empty State</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#0e5138",
+                        "on-secondary-fixed": "#251a00",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f3f4f5",
+                        "secondary-fixed": "#ffdf96",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#2c694e",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#b9c7df",
+                        "on-secondary-fixed-variant": "#5a4400",
+                        "error": "#ba1a1a",
+                        "on-background": "#191c1d",
+                        "tertiary-container": "#526074",
+                        "on-tertiary-container": "#ccdbf3",
+                        "surface": "#f8f9fa",
+                        "outline-variant": "#bfc9c1",
+                        "on-secondary-container": "#795d08",
+                        "secondary-fixed-dim": "#e7c268",
+                        "secondary-container": "#ffd87c",
+                        "primary": "#0f5238",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9fa",
+                        "secondary": "#765a05",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-container-high": "#e7e8e9",
+                        "inverse-primary": "#95d4b3",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#404943",
+                        "primary-container": "#2d6a4f",
+                        "surface-container": "#edeeef",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed-dim": "#95d4b3",
+                        "inverse-surface": "#2e3132",
+                        "surface-dim": "#d9dadb",
+                        "on-surface": "#191c1d",
+                        "tertiary-fixed": "#d5e3fc",
+                        "surface-variant": "#e1e3e4",
+                        "on-tertiary-fixed": "#0d1c2e",
+                        "primary-fixed": "#b1f0ce",
+                        "error-container": "#ffdad6",
+                        "outline": "#707973",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-fixed": "#002114",
+                        "on-primary-container": "#a8e7c5",
+                        "tertiary": "#3a485c",
+                        "on-tertiary-fixed-variant": "#3a485b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1rem"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "lg": "24px",
+                        "margin-desktop": "40px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "gutter": "20px",
+                        "2xl": "48px"
+                    },
+                    "fontFamily": {
+                        "numeric-data": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "numeric-data": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    },
+                    "boxShadow": {
+                        "soft": "0 4px 12px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.01)",
+                        "hover": "0 8px 24px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.02)"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-margin-mobile md:p-margin-desktop font-sans text-on-background">
+<!-- Empty State Card -->
+<main class="w-full max-w-lg mx-auto">
+<div class="bg-surface-container-lowest rounded-2xl p-2xl flex flex-col items-center justify-center text-center shadow-soft border border-surface-container-high relative overflow-hidden group hover:shadow-hover transition-shadow duration-300">
+<!-- Subtle Watermark/Motif -->
+<div class="absolute -right-12 -top-12 opacity-5 pointer-events-none transition-transform duration-700 group-hover:rotate-12 group-hover:scale-110">
+<span class="material-symbols-outlined text-[200px] text-primary">eco</span>
+</div>
+<!-- Illustration Area -->
+<div class="relative w-48 h-48 mb-lg flex items-center justify-center">
+<!-- Background decorative shapes -->
+<div class="absolute inset-0 bg-surface-container-lowest rounded-full shadow-inner border border-surface-container-low"></div>
+<div class="absolute inset-4 bg-surface-container-low rounded-full opacity-50"></div>
+<!-- Main Icon/Illustration -->
+<div class="relative z-10 flex flex-col items-center">
+<span class="material-symbols-outlined text-[80px] text-primary-container font-light" style="font-variation-settings: 'FILL' 0, 'wght' 200;">receipt_long</span>
+<span class="material-symbols-outlined text-3xl text-inverse-primary absolute -bottom-2 -right-4 bg-surface-container-lowest rounded-full p-1 shadow-sm" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+</div>
+<!-- Content -->
+<h2 class="font-headline-md text-headline-md text-on-surface mb-sm z-10">Belum Ada Transaksi Bulan Ini</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-sm mb-xl z-10">
+                Mulai catat pemasukan dan pengeluaran Anda untuk melihat analisis cashflow yang rapi dan berkah.
+            </p>
+<!-- CTA Button -->
+<button class="z-10 bg-primary-container text-on-primary hover:bg-primary transition-colors duration-200 rounded-lg px-xl py-md font-label-caps text-label-caps flex items-center gap-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container focus:ring-offset-2">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'wght' 600;">add</span>
+                Catat Transaksi Pertama
+            </button>
+</div>
+</main>
+</body></html>

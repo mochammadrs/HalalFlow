@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Delete Confirmation - HalalFlow</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config Injection -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-primary-fixed-variant": "#0e5138",
+                            "on-secondary-fixed": "#251a00",
+                            "on-error-container": "#93000a",
+                            "surface-container-low": "#f3f4f5",
+                            "secondary-fixed": "#ffdf96",
+                            "surface-container-lowest": "#ffffff",
+                            "surface-tint": "#2c694e",
+                            "on-secondary": "#ffffff",
+                            "tertiary-fixed-dim": "#b9c7df",
+                            "on-secondary-fixed-variant": "#5a4400",
+                            "error": "#ba1a1a",
+                            "on-background": "#191c1d",
+                            "tertiary-container": "#526074",
+                            "on-tertiary-container": "#ccdbf3",
+                            "surface": "#f8f9fa",
+                            "outline-variant": "#bfc9c1",
+                            "on-secondary-container": "#795d08",
+                            "secondary-fixed-dim": "#e7c268",
+                            "secondary-container": "#ffd87c",
+                            "primary": "#0f5238",
+                            "on-tertiary": "#ffffff",
+                            "background": "#f8f9fa",
+                            "secondary": "#765a05",
+                            "inverse-on-surface": "#f0f1f2",
+                            "surface-container-high": "#e7e8e9",
+                            "inverse-primary": "#95d4b3",
+                            "on-primary": "#ffffff",
+                            "on-error": "#ffffff",
+                            "on-surface-variant": "#404943",
+                            "primary-container": "#2d6a4f",
+                            "surface-container": "#edeeef",
+                            "surface-container-highest": "#e1e3e4",
+                            "primary-fixed-dim": "#95d4b3",
+                            "inverse-surface": "#2e3132",
+                            "surface-dim": "#d9dadb",
+                            "on-surface": "#191c1d",
+                            "tertiary-fixed": "#d5e3fc",
+                            "surface-variant": "#e1e3e4",
+                            "on-tertiary-fixed": "#0d1c2e",
+                            "primary-fixed": "#b1f0ce",
+                            "error-container": "#ffdad6",
+                            "outline": "#707973",
+                            "surface-bright": "#f8f9fa",
+                            "on-primary-fixed": "#002114",
+                            "on-primary-container": "#a8e7c5",
+                            "tertiary": "#3a485c",
+                            "on-tertiary-fixed-variant": "#3a485b"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px",
+                            "2xl": "1rem"
+                    },
+                    "spacing": {
+                            "xl": "32px",
+                            "margin-mobile": "16px",
+                            "lg": "24px",
+                            "margin-desktop": "40px",
+                            "base": "4px",
+                            "xs": "8px",
+                            "sm": "12px",
+                            "md": "16px",
+                            "gutter": "20px"
+                    },
+                    "fontFamily": {
+                            "numeric-data": [
+                                    "Inter"
+                            ],
+                            "headline-md": [
+                                    "Plus Jakarta Sans"
+                            ],
+                            "headline-lg-mobile": [
+                                    "Plus Jakarta Sans"
+                            ],
+                            "body-sm": [
+                                    "Inter"
+                            ],
+                            "label-caps": [
+                                    "Inter"
+                            ],
+                            "body-lg": [
+                                    "Inter"
+                            ],
+                            "headline-lg": [
+                                    "Plus Jakarta Sans"
+                            ],
+                            "display": [
+                                    "Plus Jakarta Sans"
+                            ]
+                    },
+                    "fontSize": {
+                            "numeric-data": [
+                                    "18px",
+                                    {
+                                            "lineHeight": "24px",
+                                            "letterSpacing": "-0.01em",
+                                            "fontWeight": "500"
+                                    }
+                            ],
+                            "headline-md": [
+                                    "20px",
+                                    {
+                                            "lineHeight": "28px",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "headline-lg-mobile": [
+                                    "24px",
+                                    {
+                                            "lineHeight": "32px",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "body-sm": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "20px",
+                                            "fontWeight": "400"
+                                    }
+                            ],
+                            "label-caps": [
+                                    "12px",
+                                    {
+                                            "lineHeight": "16px",
+                                            "letterSpacing": "0.05em",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "body-lg": [
+                                    "16px",
+                                    {
+                                            "lineHeight": "24px",
+                                            "fontWeight": "400"
+                                    }
+                            ],
+                            "headline-lg": [
+                                    "32px",
+                                    {
+                                            "lineHeight": "40px",
+                                            "letterSpacing": "-0.01em",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "display": [
+                                    "48px",
+                                    {
+                                            "lineHeight": "56px",
+                                            "letterSpacing": "-0.02em",
+                                            "fontWeight": "700"
+                                    }
+                            ]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+        .icon-fill {
+          font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center font-body-sm text-on-surface antialiased overflow-hidden">
+<!-- Background Content (Simulated Dashboard underneath) -->
+<div class="absolute inset-0 z-0 opacity-40 pointer-events-none">
+<!-- Generic dashboard mock shapes -->
+<div class="w-full h-16 bg-surface-container-highest mb-4"></div>
+<div class="max-w-5xl mx-auto flex gap-6 p-6">
+<div class="w-64 h-screen bg-surface-container-highest rounded-lg"></div>
+<div class="flex-1 space-y-6">
+<div class="h-32 bg-surface-container-highest rounded-xl w-full"></div>
+<div class="h-64 bg-surface-container-highest rounded-xl w-full"></div>
+</div>
+</div>
+</div>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 z-40 bg-surface-variant/40 backdrop-blur-sm flex items-center justify-center p-4">
+<!-- Modal Card -->
+<!-- Fixed 400px width as requested, standard Level 2 Elevation shadow -->
+<div aria-labelledby="modal-title" aria-modal="true" class="bg-surface-container-lowest w-full max-w-[400px] rounded-[16px] shadow-[0_4px_12px_rgba(45,106,79,0.08),0_1px_2px_rgba(0,0,0,0.02)] border border-outline-variant/30 flex flex-col transform transition-all scale-100 opacity-100" role="dialog">
+<!-- Content Area -->
+<div class="p-lg flex flex-col items-center text-center">
+<!-- Icon Container - Soft Red Tint (Using Error Container for Semantic Theme matching) -->
+<div class="w-16 h-16 rounded-full bg-error-container/50 flex items-center justify-center mb-md border border-error-container">
+<span class="material-symbols-outlined icon-fill text-error text-[32px]">delete</span>
+</div>
+<!-- Title -->
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs" id="modal-title">
+                    Hapus Transaksi Ini?
+                </h2>
+<!-- Description -->
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Tindakan ini tidak dapat dibatalkan. Transaksi sebesar Rp 150.000 (Makan Siang) akan dihapus secara permanen dari riwayat keuangan Anda.
+                </p>
+</div>
+<!-- Footer Actions -->
+<div class="p-lg pt-0 flex gap-sm mt-xs">
+<!-- Cancel Button -->
+<button class="flex-1 py-[10px] px-md rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-sm font-medium hover:bg-surface-container-low transition-colors duration-200" type="button">
+                    Batal
+                </button>
+<!-- Confirm Delete Button - Semantic Error Color -->
+<button class="flex-1 py-[10px] px-md rounded-lg bg-error text-on-error font-body-sm font-medium hover:bg-error/90 shadow-sm transition-colors duration-200" type="button">
+                    Ya, Hapus
+                </button>
+</div>
+</div>
+</div>
+</body></html>

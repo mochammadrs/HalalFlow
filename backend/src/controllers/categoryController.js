@@ -27,16 +27,21 @@ exports.createCategory = async (req, res, next) => {
     return res.status(400).json({ message: 'Nama dan Tipe kategori dibutuhkan' });
   }
 
+  const normalizedType = String(type).toUpperCase();
+  if (normalizedType !== 'INCOME' && normalizedType !== 'EXPENSE') {
+    return res.status(400).json({ message: 'Tipe kategori harus INCOME atau EXPENSE' });
+  }
+
   try {
     const { rows } = await db.query(
       'INSERT INTO categories (user_id, name, type) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.id, name, type]
+      [req.user.id, name.trim(), normalizedType]
     );
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
+    console.error('Create category error:', err);
+    res.status(500).json({ message: 'Gagal membuat kategori di database' });
   }
 };
 
@@ -51,22 +56,27 @@ exports.updateCategory = async (req, res, next) => {
     return res.status(400).json({ message: 'Nama dan Tipe kategori dibutuhkan' });
   }
 
+  const normalizedType = String(type).toUpperCase();
+  if (normalizedType !== 'INCOME' && normalizedType !== 'EXPENSE') {
+    return res.status(400).json({ message: 'Tipe kategori harus INCOME atau EXPENSE' });
+  }
+
   try {
     // Pastikan kategori milik user yang login
     const { rows } = await db.query(
       'UPDATE categories SET name = $1, type = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
-      [name, type, id, req.user.id]
+      [name.trim(), normalizedType, id, req.user.id]
     );
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Kategori tidak ditemukan atau tidak memiliki akses' });
     }
 
-    console.log('✅ Category updated successfully:', { id, name, type });
+    console.log('✅ Category updated successfully:', { id, name, normalizedType });
     res.status(200).json(rows[0]);
   } catch (err) {
     console.error('❌ Update category error:', err);
-    res.status(500).send('Server error');
+    res.status(500).json({ message: 'Gagal memperbarui kategori di database' });
   }
 };
 

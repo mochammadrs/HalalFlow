@@ -88,3 +88,37 @@ exports.getExpenseByCategory = async (req, res, next) => {
     res.status(500).send('Server error');
   }
 };
+
+// @desc    Ambil tren cashflow bulanan (6 bulan terakhir)
+// @route   GET /api/v1/dashboard/monthly-trend
+// @access  Private
+exports.getMonthlyTrend = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT 
+         TO_CHAR(date, 'Mon YYYY') AS month_label,
+         DATE_TRUNC('month', date) AS month_date,
+         SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END) AS income,
+         SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END) AS expense
+       FROM transactions
+       WHERE user_id = $1
+       GROUP BY month_date, month_label
+       ORDER BY month_date ASC
+       LIMIT 6`,
+      [req.user.id]
+    );
+
+    const labels = rows.map(r => r.month_label);
+    const incomeData = rows.map(r => parseFloat(r.income));
+    const expenseData = rows.map(r => parseFloat(r.expense));
+
+    res.status(200).json({
+      labels,
+      income: incomeData,
+      expense: expenseData,
+    });
+  } catch (err) {
+    console.error('Error monthly trend:', err);
+    res.status(500).send('Server error');
+  }
+};

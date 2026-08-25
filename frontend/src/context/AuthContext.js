@@ -1,119 +1,105 @@
 import React, { createContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
-import axios from 'axios'; // Kita butuh axios untuk setup 'interceptor'
+import axios from 'axios';
 
-// 1. Buat Context
+// 1. Setup Axios Interceptors globally
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// 2. Buat Context
 const AuthContext = createContext();
 
-// Helper: Fungsi untuk setup header default di axios
-const setAuthToken = (token) => {
-  if (token) {
-    // Terapkan token ke SETIAP request
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    // Hapus header-nya
-    delete axios.defaults.headers.common['Authorization'];
-  }
-};
-
-// 2. Buat Provider (komponen yang 'membungkus' App)
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token')); // Ambil token dari localStorage
-  const [loading, setLoading] = useState(true); // State loading untuk cek token
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
 
-  // 3. Cek token saat aplikasi pertama kali dimuat
+  // Logout helper
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+  };
+
+  // Response interceptor for 401 Unauthorized (expired token)
   useEffect(() => {
-    console.log('AuthContext: checking token on mount');
-    let isMounted = true; // Untuk mencegah update state setelah unmount
-    
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          console.warn('⚠️ 401 Unauthorized - token expired or invalid. Logging out.');
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
+  // Check token on mount
+  useEffect(() => {
     const checkAuth = () => {
       try {
-        const token = localStorage.getItem('token');
+        const storedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
-        
-        if (token && isMounted) {
-          setToken(token);
-          setAuthToken(token); // Set header axios
-          
-          // Load user dari localStorage
-          if (savedUser) {
-            try {
-              const userData = JSON.parse(savedUser);
-              setUser(userData);
-              console.log('✅ User loaded from localStorage:', userData);
-            } catch (parseErr) {
-              console.error('❌ Error parsing user data:', parseErr);
-              // Jika parse error, logout user
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-              setToken(null);
-              setUser(null);
-            }
-          } else {
-            console.warn('⚠️ Token exists but no user data in localStorage');
-            // Jika ada token tapi tidak ada user data, logout
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
+
+        if (storedToken && savedUser) {
+          try {
+            const userData = JSON.parse(savedUser);
+            setUser(userData);
+            setToken(storedToken);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          } catch (parseErr) {
+            console.error('Error parsing user data:', parseErr);
+            logout();
           }
+        } else {
+          logout();
         }
       } catch (err) {
         console.error('AuthContext: Error checking token', err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-    
+
     checkAuth();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  // 4. Fungsi Login (yang akan dipanggil LoginPage)
+  // Login handler
   const login = async (email, password) => {
     try {
       const response = await authService.login(email, password);
-      const { token, user } = response.data;
-      
-      // Simpan di state & localStorage
-      setToken(token);
-      localStorage.setItem('token', token);
-      
-      // Simpan user data dengan full_name
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        console.log('✅ User saved to localStorage:', user);
+      const { token: receivedToken, user: receivedUser } = response.data;
+
+      setToken(receivedToken);
+      localStorage.setItem('token', receivedToken);
+
+      if (receivedUser) {
+        localStorage.setItem('user', JSON.stringify(receivedUser));
+        setUser(receivedUser);
       }
-      
-      // Set header axios
-      setAuthToken(token);
-      
-      return response; // Kembalikan respon sukses
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${receivedToken}`;
+      return response;
     } catch (err) {
-      // Jika error, lempar agar form bisa menangkapnya
       throw err;
     }
   };
-    
 
-  // 5. Fungsi Logout
-  const logout = () => {
-    // Hapus semua
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user'); // Hapus user dari localStorage
-    setAuthToken(null); // Hapus header axios
-  };
-
-  // 6. Kirim 'value' ini ke semua 'children' (anak komponen)
   return (
     <AuthContext.Provider value={{ token, user, loading, login, logout }}>
       {children}
@@ -121,5 +107,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 7. Ekspor Context
 export default AuthContext;

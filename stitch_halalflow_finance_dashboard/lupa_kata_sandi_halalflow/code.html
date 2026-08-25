@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HalalFlow - Lupa Kata Sandi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#526074",
+                        "on-secondary-container": "#795d08",
+                        "surface-container": "#edeeef",
+                        "on-background": "#191c1d",
+                        "inverse-on-surface": "#f0f1f2",
+                        "secondary-fixed": "#ffdf96",
+                        "secondary-container": "#ffd87c",
+                        "surface-container-low": "#f3f4f5",
+                        "outline-variant": "#bfc9c1",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#0e5138",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface-bright": "#f8f9fa",
+                        "surface": "#f8f9fa",
+                        "outline": "#707973",
+                        "primary-container": "#2d6a4f",
+                        "background": "#f8f9fa",
+                        "secondary-fixed-dim": "#e7c268",
+                        "on-primary-container": "#a8e7c5",
+                        "on-tertiary-container": "#ccdbf3",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#b9c7df",
+                        "primary": "#0f5238",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#b1f0ce",
+                        "on-surface": "#191c1d",
+                        "inverse-primary": "#95d4b3",
+                        "on-tertiary-fixed": "#0d1c2e",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-fixed": "#002114",
+                        "surface-tint": "#2c694e",
+                        "surface-variant": "#e1e3e4",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#251a00",
+                        "on-surface-variant": "#404943",
+                        "on-tertiary-fixed-variant": "#3a485b",
+                        "inverse-surface": "#2e3132",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "primary-fixed-dim": "#95d4b3",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#d5e3fc",
+                        "tertiary": "#3a485c",
+                        "on-secondary-fixed-variant": "#5a4400",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#765a05"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "gutter": "20px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "lg": "24px",
+                        "margin-desktop": "40px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-caps": ["Inter"],
+                        "numeric-data": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "numeric-data": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-shadow { box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.02); }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-gutter font-body-lg text-on-surface antialiased">
+<!-- Container for both states to demonstrate flow -->
+<div class="flex flex-col lg:flex-row gap-xl max-w-[1040px] w-full items-center justify-center">
+<!-- Default State: Forgot Password Form -->
+<div class="bg-surface-container-lowest w-full max-w-[480px] rounded-[16px] border border-surface-container-high custom-shadow p-lg md:p-xl">
+<!-- Brand Logo -->
+<div class="flex justify-center mb-xl">
+<img alt="HalalFlow Logo" class="h-[48px] w-auto" src="https://lh3.googleusercontent.com/aida/AEtjO1W4SeJDNCZdQ0ZBAmosE-XjCRKwUShDOeZfq7QQNWOnTFanM9AlVLWNjP6p4b5WCLl54jjd83lafSwALaMdybBRUNZjC2_lYeKda8yT0gON4xZfgalAhzZAZ4ZDTyLNJqCZCsMY2WJ064PZezRDTAJijNmmdGXemkICBN3XjWI9fOcdIgt0xc8z5y_VFZDpzsKMaj7HHpRZJOxC-ft6gMLw_Zp7LYnxxR0Ro2JNWORBdSl2XGblEjVuQHY"/>
+</div>
+<!-- Icon Header -->
+<div class="flex flex-col items-center text-center mb-xl">
+<div class="w-16 h-16 rounded-full bg-primary-container/10 flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-[32px] text-primary" data-icon="lock_reset" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock_reset</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg md:font-headline-lg-mobile md:text-headline-lg-mobile text-on-surface mb-xs">Lupa Kata Sandi?</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[320px]">
+                    Masukkan email yang terdaftar. Kami akan mengirimkan tautan untuk mengatur ulang kata sandi Anda.
+                </p>
+</div>
+<!-- Form -->
+<form class="space-y-md">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-base uppercase" for="email">Alamat Email</label>
+<input class="w-full h-[48px] px-sm rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-body-lg text-body-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" id="email" name="email" placeholder="contoh@email.com" required="" type="email"/>
+</div>
+<button class="w-full h-[48px] bg-primary text-on-primary rounded-lg font-headline-md text-[16px] leading-[24px] tracking-wide hover:bg-surface-tint transition-colors duration-200 shadow-sm mt-md" type="button">
+                    Kirim Tautan Pemulihan
+                </button>
+</form>
+<!-- Back Link -->
+<div class="mt-xl text-center">
+<a class="inline-flex items-center text-primary font-body-sm text-body-sm hover:text-surface-tint transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-[18px] mr-base group-hover:-translate-x-1 transition-transform duration-200" data-icon="arrow_back">arrow_back</span>
+                    Kembali ke halaman Login
+                </a>
+</div>
+</div>
+<!-- Success State Card -->
+<div class="bg-surface-container-lowest w-full max-w-[480px] rounded-[16px] border border-surface-container-high custom-shadow p-lg md:p-xl">
+<!-- Brand Logo -->
+<div class="flex justify-center mb-xl">
+<img alt="HalalFlow Logo" class="h-[48px] w-auto" src="https://lh3.googleusercontent.com/aida/AEtjO1W4SeJDNCZdQ0ZBAmosE-XjCRKwUShDOeZfq7QQNWOnTFanM9AlVLWNjP6p4b5WCLl54jjd83lafSwALaMdybBRUNZjC2_lYeKda8yT0gON4xZfgalAhzZAZ4ZDTyLNJqCZCsMY2WJ064PZezRDTAJijNmmdGXemkICBN3XjWI9fOcdIgt0xc8z5y_VFZDpzsKMaj7HHpRZJOxC-ft6gMLw_Zp7LYnxxR0Ro2JNWORBdSl2XGblEjVuQHY"/>
+</div>
+<!-- Icon Header -->
+<div class="flex flex-col items-center text-center mb-xl">
+<div class="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-[32px] text-secondary" data-icon="mark_email_read" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mark_email_read</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg md:font-headline-lg-mobile md:text-headline-lg-mobile text-on-surface mb-xs">Email Terkirim!</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[320px]">
+                    Periksa kotak masuk Anda di <strong class="text-on-surface font-medium">user@example.com</strong> untuk melanjutkan.
+                </p>
+</div>
+<!-- Resend/Back Actions -->
+<div class="flex flex-col gap-sm">
+<button class="w-full h-[48px] bg-surface-container-lowest text-primary border border-surface-container-high rounded-lg font-headline-md text-[16px] leading-[24px] hover:bg-surface-container-low transition-colors duration-200" type="button">
+                    Kirim Ulang Email
+                </button>
+</div>
+<!-- Back Link -->
+<div class="mt-xl text-center">
+<a class="inline-flex items-center text-primary font-body-sm text-body-sm hover:text-surface-tint transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined text-[18px] mr-base group-hover:-translate-x-1 transition-transform duration-200" data-icon="arrow_back">arrow_back</span>
+                    Kembali ke halaman Login
+                </a>
+</div>
+</div>
+</div>
+</body></html>

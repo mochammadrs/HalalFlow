@@ -11,8 +11,11 @@ module.exports = function (req, res, next) {
   }
 
   try {
-    // 3. Ekstrak token ("Bearer <token>")
-    const token = authHeader.split(' ')[1]; // Ambil bagian kedua
+    // 3. Ekstrak token ("Bearer <token>" atau raw token)
+    let token = authHeader;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    }
     if (!token) {
       return res.status(401).json({ message: 'Format token salah' });
     }

@@ -14,9 +14,15 @@ const getExpenseByCategory = () => {
   return axios.get(`${API_URL}/dashboard/expense-by-category`);
 };
 
+// Fungsi untuk MENGAMBIL data tren cashflow bulanan
+const getMonthlyTrend = () => {
+  return axios.get(`${API_URL}/dashboard/monthly-trend`);
+};
+
 const dashboardService = {
   getSummary,
   getExpenseByCategory,
+  getMonthlyTrend,
 };
 
 export default dashboardService;

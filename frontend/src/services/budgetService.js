@@ -17,9 +17,10 @@ const updateSettings = (percent_tabungan) => {
 };
 
 // Fungsi untuk MENGHITUNG anggaran
-const calculateBudget = (pemasukan) => {
+const calculateBudget = (pemasukan, percent_tabungan) => {
   return axios.post(`${API_URL}/budget/calculate`, {
     pemasukan,
+    percent_tabungan,
   });
 };
 

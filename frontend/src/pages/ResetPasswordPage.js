@@ -6,7 +6,7 @@ import Icon from '../components/Icon';
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const [token, setToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,7 +15,6 @@ const ResetPasswordPage = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Ambil token dari URL query
     const tokenParam = searchParams.get('token');
     if (tokenParam) {
       setToken(tokenParam);
@@ -26,126 +25,136 @@ const ResetPasswordPage = () => {
     e.preventDefault();
     setError(null);
 
-    // Validasi
     if (newPassword.length < 6) {
-      setError('Password minimal 6 karakter');
+      setError('Kata sandi baru minimal 6 karakter');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Password tidak cocok');
+      setError('Konfirmasi kata sandi tidak cocok');
       return;
     }
 
     if (!token) {
-      setError('Token tidak valid');
+      setError('Token pemulihan tidak valid atau kadaluarsa');
       return;
     }
 
     setLoading(true);
-
     try {
       await authService.resetPassword(token, newPassword);
-      setLoading(false);
       setSuccess(true);
-      
-      // Redirect ke login setelah 2 detik
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err) {
+      setError(err.response?.data?.message || 'Terjadi kesalahan saat mereset kata sandi.');
+    } finally {
       setLoading(false);
-      setError(err.response?.data?.message || 'Terjadi kesalahan. Silakan coba lagi.');
     }
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        {/* Header Section */}
-        <div className="auth-header">
-          <div className="auth-logo">
-            <Icon icon="mdi:key-variant" size={48} color="var(--color-primary)" />
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      backgroundColor: 'var(--color-bg)'
+    }}>
+      <div className="auth-card-box" style={{ maxWidth: '480px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <div className="brand-logo-container">
+            <div className="brand-logo-icon">
+              <Icon icon="mdi:mosque" size={24} color="#FFFFFF" />
+            </div>
+            <span style={{ fontSize: '1.3rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--color-primary)' }}>
+              HalalFlow
+            </span>
           </div>
-          <h1 className="auth-title">Reset Password</h1>
-          <p className="auth-subtitle">Masukkan password baru Anda</p>
         </div>
 
-        {/* Form Section */}
-        {!success ? (
-          <form onSubmit={handleSubmit} noValidate className="auth-form">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: 'var(--radius-full)',
+            backgroundColor: 'var(--color-primary-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '16px',
+            color: 'var(--color-primary)'
+          }}>
+            <Icon icon={success ? 'mdi:check-decagram' : 'mdi:key-change'} size={32} />
+          </div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '8px' }}>
+            {success ? 'Kata Sandi Diperbarui!' : 'Atur Ulang Kata Sandi'}
+          </h1>
+          <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', maxWidth: '340px' }}>
+            {success
+              ? 'Kata sandi Anda telah berhasil diubah. Mengalihkan ke halaman login...'
+              : 'Silakan masukkan kata sandi baru untuk akun Anda.'}
+          </p>
+        </div>
+
+        {error && (
+          <div className="form-error-alert">
+            <Icon icon="mdi:alert-circle-outline" size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {!success && (
+          <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="newPassword">Password Baru</label>
+              <label className="form-label">KATA SANDI BARU</label>
               <input
-                id="newPassword"
                 type="password"
+                className="form-input"
+                placeholder="Minimal 6 karakter"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                placeholder="Masukkan password baru"
                 autoFocus
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="confirmPassword">Konfirmasi Password</label>
+              <label className="form-label">KONFIRMASI KATA SANDI</label>
               <input
-                id="confirmPassword"
                 type="password"
+                className="form-input"
+                placeholder="Ulangi kata sandi baru"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Ketik ulang password baru"
               />
-              <p className="password-hint">Password minimal 6 karakter</p>
             </div>
-
-            {error && (
-              <div className="alert alert-error">
-                <span className="alert-icon">
-                  <Icon icon="mdi:alert-circle" size={20} />
-                </span>
-                <span>{error}</span>
-              </div>
-            )}
 
             <button
               type="submit"
-              className="btn btn-primary btn-full"
+              className="btn-auth-submit"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <span className="spinner-small"></span>
-                  Mereset...
+                  <Icon icon="mdi:loading" size={18} className="animate-spin" />
+                  <span>Menyimpan Kata Sandi...</span>
                 </>
               ) : (
-                <>
-                  <Icon icon="mdi:check" size={18} style={{ marginRight: '0.5rem' }} />
-                  Reset Password
-                </>
+                <span>Perbarui Kata Sandi</span>
               )}
             </button>
           </form>
-        ) : (
-          <div className="success-message">
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <Icon icon="mdi:check-circle" size={64} color="var(--color-success)" />
-            </div>
-            <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>Password Berhasil Direset!</h3>
-            <p style={{ textAlign: 'center' }}>
-              Password Anda telah berhasil direset. Anda akan diarahkan ke halaman login...
-            </p>
-          </div>
         )}
 
-        {/* Footer Links */}
-        <div className="auth-footer">
-          <p>
-            <Link to="/login" className="link">
-              Kembali ke Login
-            </Link>
-          </p>
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.88rem' }}>
+          <Link to="/login" style={{ color: 'var(--color-primary-container)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Icon icon="mdi:arrow-left" size={16} />
+            <span>Kembali ke halaman Login</span>
+          </Link>
         </div>
       </div>
     </div>

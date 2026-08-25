@@ -1,510 +1,490 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import transactionService from '../services/transactionService';
 import categoryService from '../services/categoryService';
 import AuthContext from '../context/AuthContext';
 import Icon from '../components/Icon';
+import EmptyState from '../components/EmptyState';
+import TransactionModal from '../components/TransactionModal';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
-const formatRupiah = (angka) => {
+const formatRupiah = (number) => {
+  const val = Number(number) || 0;
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
-  }).format(angka);
-};
-
-const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString('id-ID', options);
+    maximumFractionDigits: 0,
+  }).format(val);
 };
 
 const TransactionsPage = () => {
   const { user } = useContext(AuthContext);
-  
-  // State untuk transaksi
+
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // State untuk form
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    amount: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-    category_id: '',
-    type: 'EXPENSE'
+
+  // Filters & Search
+  const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'income' | 'expense'
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [deleteModalState, setDeleteModalState] = useState({
+    isOpen: false,
+    transaction: null,
+    loading: false,
   });
-  
-  // State untuk filter
-  const [filterType, setFilterType] = useState('ALL');
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [txRes, catRes] = await Promise.all([
+        transactionService.getTransactions(),
+        categoryService.getCategories(),
+      ]);
+      setTransactions(txRes.data || []);
+      setCategories(catRes.data || []);
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setError('Gagal memuat daftar transaksi.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
       fetchData();
     }
-  }, [user]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [transactionsRes, categoriesRes] = await Promise.all([
-        transactionService.getTransactions(),
-        categoryService.getCategories()
-      ]);
-      
-      setTransactions(transactionsRes.data || []);
-      setCategories(categoriesRes.data || []);
-      setLoading(false);
-    } catch (err) {
-      console.error('Gagal mengambil data:', err);
-      setError('Gagal memuat data. Silakan coba lagi.');
-      setLoading(false);
-    }
-  };
+    // Auto-refresh when transaction is created/edited globally
+    const handleTxUpdate = () => fetchData();
+    window.addEventListener('halalflow:transaction-updated', handleTxUpdate);
+    return () => {
+      window.removeEventListener('halalflow:transaction-updated', handleTxUpdate);
+    };
+  }, [user, fetchData]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-      category_id: '',
-      type: 'EXPENSE'
-    });
-    setEditingId(null);
-    setShowForm(false);
-    setError('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!formData.amount || !formData.date || !formData.category_id) {
-      setError('Harap isi semua field yang wajib.');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      if (editingId) {
-        // Update transaksi
-        const response = await transactionService.updateTransaction(
-          editingId,
-          formData.date,
-          parseFloat(formData.amount),
-          formData.type,
-          parseInt(formData.category_id),
-          formData.description
-        );
-        
-        setTransactions(prev =>
-          prev.map(t => t.id === editingId ? response.data : t)
-        );
-      } else {
-        // Buat transaksi baru
-        const response = await transactionService.createTransaction(
-          formData.date,
-          parseFloat(formData.amount),
-          formData.type,
-          parseInt(formData.category_id),
-          formData.description
-        );
-        
-        setTransactions(prev => [response.data, ...prev]);
+  // Filtered transactions
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      // Filter by type
+      if (filterType !== 'ALL' && tx.type.toLowerCase() !== filterType.toLowerCase()) {
+        return false;
       }
 
-      resetForm();
-      setIsSubmitting(false);
+      // Filter by category
+      if (selectedCategory !== 'ALL' && String(tx.category_id) !== String(selectedCategory)) {
+        return false;
+      }
+
+      // Filter by search query
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        const descMatch = tx.description?.toLowerCase().includes(query);
+        const catMatch = tx.category_name?.toLowerCase().includes(query);
+        if (!descMatch && !catMatch) return false;
+      }
+
+      return true;
+    });
+  }, [transactions, filterType, selectedCategory, searchQuery]);
+
+  // Pagination calculation
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / itemsPerPage));
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTransactions.slice(start, start + itemsPerPage);
+  }, [filteredTransactions, currentPage]);
+
+  // Stats calculation
+  const stats = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    filteredTransactions.forEach((tx) => {
+      const amount = Number(tx.amount) || 0;
+      const isInc = String(tx.type).toUpperCase() === 'INCOME';
+      if (isInc) income += amount;
+      else expense += amount;
+    });
+    return {
+      totalCount: filteredTransactions.length,
+      income,
+      expense,
+      balance: income - expense,
+    };
+  }, [filteredTransactions]);
+
+  const handleOpenAdd = () => {
+    setEditingTransaction(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (tx) => {
+    setEditingTransaction(tx);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTransaction = async (formData) => {
+    if (editingTransaction) {
+      await transactionService.updateTransaction(
+        editingTransaction.id,
+        formData.date,
+        formData.amount,
+        formData.type,
+        formData.category_id,
+        formData.description
+      );
+    } else {
+      await transactionService.createTransaction(
+        formData.date,
+        formData.amount,
+        formData.type,
+        formData.category_id,
+        formData.description
+      );
+    }
+    await fetchData();
+    window.dispatchEvent(new CustomEvent('halalflow:transaction-updated'));
+  };
+
+  const handleOpenDelete = (tx) => {
+    setDeleteModalState({
+      isOpen: true,
+      transaction: tx,
+      loading: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.transaction) return;
+    setDeleteModalState((prev) => ({ ...prev, loading: true }));
+    try {
+      await transactionService.deleteTransaction(deleteModalState.transaction.id);
+      setDeleteModalState({ isOpen: false, transaction: null, loading: false });
+      await fetchData();
+      window.dispatchEvent(new CustomEvent('halalflow:transaction-updated'));
     } catch (err) {
-      console.error('Gagal menyimpan transaksi:', err);
-      setError(err.response?.data?.message || 'Gagal menyimpan transaksi.');
-      setIsSubmitting(false);
+      console.error('Delete transaction error:', err);
+      setDeleteModalState((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  const handleEdit = (transaction) => {
-    setFormData({
-      amount: transaction.amount.toString(),
-      description: transaction.description || '',
-      date: transaction.date.split('T')[0],
-      category_id: transaction.category_id.toString(),
-      type: transaction.type
-    });
-    setEditingId(transaction.id);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) {
+      alert('Tidak ada data transaksi untuk diekspor.');
       return;
     }
 
-    try {
-      await transactionService.deleteTransaction(id);
-      setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      console.error('Gagal menghapus transaksi:', err);
-      setError('Gagal menghapus transaksi.');
-    }
+    const headers = ['Tanggal', 'Deskripsi', 'Kategori', 'Tipe', 'Nominal'];
+    const rows = filteredTransactions.map((tx) => [
+      `"${new Date(tx.date).toISOString().split('T')[0]}"`,
+      `"${(tx.description || '').replace(/"/g, '""')}"`,
+      `"${(tx.category_name || 'Umum').replace(/"/g, '""')}"`,
+      `"${String(tx.type).toUpperCase() === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}"`,
+      tx.amount,
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Laporan_Transaksi_HalalFlow_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  // Filter transaksi
-  const filteredTransactions = transactions.filter(t => {
-    const transactionDate = new Date(t.date);
-    const transactionMonth = transactionDate.getMonth() + 1;
-    const transactionYear = transactionDate.getFullYear();
-    
-    const matchType = filterType === 'ALL' || t.type === filterType;
-    const matchMonth = filterMonth === 0 || transactionMonth === parseInt(filterMonth);
-    const matchYear = transactionYear === parseInt(filterYear);
-    
-    return matchType && matchMonth && matchYear;
-  });
-
-  // Hitung total
-  const totalIncome = filteredTransactions
-    .filter(t => t.type === 'INCOME')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-  
-  const totalExpense = filteredTransactions
-    .filter(t => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-
-  if (loading && user) {
+  if (loading && transactions.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <div className="spinner"></div>
-        <p style={{ marginTop: '1rem' }}>Memuat transaksi...</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-border)',
+          borderTopColor: 'var(--color-primary-container)',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Memuat riwayat transaksi...</p>
       </div>
     );
   }
 
-  if (!user) {
-    return <div className="info">Silakan login untuk melihat halaman ini.</div>;
-  }
-
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            <Icon icon="mdi:wallet" size={28} />
-            Transaksi Keuangan
-          </h1>
-          <p style={{ color: 'var(--color-text)', opacity: 0.8, margin: '0.5rem 0 0 0' }}>
-            Kelola semua pemasukan dan pengeluaran Anda.
-          </p>
+      {/* 1. Summary Quick Cards */}
+      <div className="tx-stats-grid">
+        <div className="tx-stat-card">
+          <span className="tx-stat-label">TOTAL TRANSAKSI</span>
+          <div className="tx-stat-value">
+            {stats.totalCount} <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>data</span>
+          </div>
         </div>
-        
-        <button
-          onClick={() => {
-            resetForm();
-            setShowForm(!showForm);
-          }}
-          className="btn btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-        >
-          <Icon icon={showForm ? "mdi:close" : "mdi:plus"} size={18} />
-          {showForm ? 'Tutup' : 'Transaksi Baru'}
-        </button>
+        <div className="tx-stat-card">
+          <span className="tx-stat-label">PEMASUKAN TERFILTER</span>
+          <div className="tx-stat-value" style={{ color: 'var(--color-success)' }}>
+            {formatRupiah(stats.income)}
+          </div>
+        </div>
+        <div className="tx-stat-card">
+          <span className="tx-stat-label">PENGELUARAN TERFILTER</span>
+          <div className="tx-stat-value" style={{ color: 'var(--color-error)' }}>
+            {formatRupiah(stats.expense)}
+          </div>
+        </div>
+        <div className="tx-stat-card">
+          <span className="tx-stat-label">SELISIH KAS</span>
+          <div className="tx-stat-value" style={{ color: stats.balance >= 0 ? 'var(--color-primary)' : 'var(--color-error)' }}>
+            {formatRupiah(stats.balance)}
+          </div>
+        </div>
       </div>
 
-      {/* Form Section */}
-      {showForm && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <div className="card-header">
-            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Icon icon={editingId ? "mdi:pencil" : "mdi:plus-circle"} size={20} />
-              {editingId ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
-            </h3>
+      {/* 2. Filter Toolbar */}
+      <div className="filter-toolbar">
+        {/* Segmented Type Filter */}
+        <div className="segmented-control">
+          <button
+            type="button"
+            className={`segment-btn ${filterType === 'ALL' ? 'active' : ''}`}
+            onClick={() => { setFilterType('ALL'); setCurrentPage(1); }}
+          >
+            Semua
+          </button>
+          <button
+            type="button"
+            className={`segment-btn ${filterType === 'expense' ? 'active' : ''}`}
+            onClick={() => { setFilterType('expense'); setCurrentPage(1); }}
+          >
+            Pengeluaran
+          </button>
+          <button
+            type="button"
+            className={`segment-btn ${filterType === 'income' ? 'active' : ''}`}
+            onClick={() => { setFilterType('income'); setCurrentPage(1); }}
+          >
+            Pemasukan
+          </button>
+        </div>
+
+        {/* Filter by Category & Search */}
+        <div className="filter-actions">
+          <select
+            className="form-select"
+            value={selectedCategory}
+            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+            style={{ width: 'auto', padding: '8px 12px', fontSize: '0.85rem' }}
+          >
+            <option value="ALL">Semua Kategori</option>
+            {categories.map((c) => {
+              const isInc = String(c.type).toUpperCase() === 'INCOME';
+              return (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({isInc ? 'Pemasukan' : 'Pengeluaran'})
+                </option>
+              );
+            })}
+          </select>
+
+          <div className="search-input-box">
+            <Icon icon="mdi:magnify" size={18} className="search-icon-inside" />
+            <input
+              type="text"
+              placeholder="Cari transaksi..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="form-standard">
-            {error && (
-              <div className="alert alert-error">
-                <span className="alert-icon">
-                  <Icon icon="mdi:alert-circle" size={20} />
-                </span>
-                <span>{error}</span>
-              </div>
-            )}
+          <button
+            type="button"
+            className="btn-modal-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.85rem', height: '40px' }}
+            onClick={handleExportCSV}
+            title="Download file CSV laporan transaksi"
+          >
+            <Icon icon="mdi:file-download-outline" size={18} />
+            <span>Ekspor CSV</span>
+          </button>
 
-            <div className="grid grid-2">
-              <div className="form-group">
-                <label htmlFor="type">Tipe Transaksi *</label>
-                <select
-                  id="type"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="EXPENSE">Pengeluaran</option>
-                  <option value="INCOME">Pemasukan</option>
-                </select>
-              </div>
+          <button
+            className="btn-primary-header"
+            onClick={handleOpenAdd}
+          >
+            <Icon icon="mdi:plus" size={18} />
+            <span>Catat Transaksi</span>
+          </button>
+        </div>
+      </div>
 
-              <div className="form-group">
-                <label htmlFor="amount">Jumlah (IDR) *</label>
-                <input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  value={formData.amount}
-                  onChange={handleInputChange}
-                  placeholder="Contoh: 50000"
-                  min="0"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-2">
-              <div className="form-group">
-                <label htmlFor="category_id">Kategori *</label>
-                <select
-                  id="category_id"
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Pilih Kategori</option>
-                  {categories
-                    .filter(cat => cat.type === formData.type)
-                    .map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="date">Tanggal *</label>
-                <input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">Deskripsi (Opsional)</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Contoh: Belanja bulanan di supermarket"
-                rows="3"
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSubmitting}
-                style={{ flex: 1 }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="spinner-mini"></span>
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Icon icon="mdi:check" size={18} style={{ marginRight: '0.5rem' }} />
-                    {editingId ? 'Update Transaksi' : 'Simpan Transaksi'}
-                  </>
-                )}
-              </button>
-              
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="btn btn-secondary"
-                >
-                  Batal
-                </button>
-              )}
-            </div>
-          </form>
+      {error && (
+        <div className="form-error-alert">
+          <Icon icon="mdi:alert-circle-outline" size={18} />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Filter Section */}
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icon icon="mdi:filter" size={20} color="var(--color-primary)" />
-            <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>Filter:</span>
-          </div>
-          
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="custom-select"
-          >
-            <option value="ALL">Semua Tipe</option>
-            <option value="INCOME">Pemasukan</option>
-            <option value="EXPENSE">Pengeluaran</option>
-          </select>
+      {/* 3. Transaction Data Table */}
+      {filteredTransactions.length === 0 ? (
+        <EmptyState
+          title="Tidak Ada Transaksi Ditemukan"
+          description={searchQuery || filterType !== 'ALL' || selectedCategory !== 'ALL'
+            ? 'Tidak ada transaksi yang cocok dengan kriteria filter saat ini.'
+            : 'Mulai catat transaksi pemasukan atau pengeluaran Anda.'}
+          actionLabel="+ Tambah Transaksi"
+          onAction={handleOpenAdd}
+        />
+      ) : (
+        <div className="table-container">
+          <table className="custom-data-table">
+            <thead>
+              <tr>
+                <th>TANGGAL</th>
+                <th>DESKRIPSI & KATEGORI</th>
+                <th>TIPE</th>
+                <th>NOMINAL</th>
+                <th style={{ textAlign: 'right' }}>AKSI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedTransactions.map((tx) => {
+                const isIncome = String(tx.type).toUpperCase() === 'INCOME';
+                const dateObj = new Date(tx.date);
+                const formattedDate = new Intl.DateTimeFormat('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }).format(dateObj);
 
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(parseInt(e.target.value))}
-            className="custom-select"
-          >
-            <option value="0">Semua Bulan</option>
-            <option value="1">Januari</option>
-            <option value="2">Februari</option>
-            <option value="3">Maret</option>
-            <option value="4">April</option>
-            <option value="5">Mei</option>
-            <option value="6">Juni</option>
-            <option value="7">Juli</option>
-            <option value="8">Agustus</option>
-            <option value="9">September</option>
-            <option value="10">Oktober</option>
-            <option value="11">November</option>
-            <option value="12">Desember</option>
-          </select>
-
-          <select
-            value={filterYear}
-            onChange={(e) => setFilterYear(parseInt(e.target.value))}
-            className="custom-select"
-          >
-            <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
-            <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
-            <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-3" style={{ marginBottom: '2rem' }}>
-        <div className="summary-card" style={{ background: 'linear-gradient(135deg, #28A745 0%, #20803a 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icon icon="mdi:arrow-down-bold-circle" size={24} color="#fff" />
-            <h3 style={{ color: '#fff' }}>Pemasukan</h3>
-          </div>
-          <div className="value" style={{ color: '#fff' }}>{formatRupiah(totalIncome)}</div>
-        </div>
-
-        <div className="summary-card" style={{ background: 'linear-gradient(135deg, #DC3545 0%, #b02a37 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icon icon="mdi:arrow-up-bold-circle" size={24} color="#fff" />
-            <h3 style={{ color: '#fff' }}>Pengeluaran</h3>
-          </div>
-          <div className="value" style={{ color: '#fff' }}>{formatRupiah(totalExpense)}</div>
-        </div>
-
-        <div className="summary-card" style={{ background: 'linear-gradient(135deg, #2D6A4F 0%, #1e4a37 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icon icon="mdi:wallet" size={24} color="#fff" />
-            <h3 style={{ color: '#fff' }}>Saldo</h3>
-          </div>
-          <div className="value" style={{ color: '#fff' }}>{formatRupiah(totalIncome - totalExpense)}</div>
-        </div>
-      </div>
-
-      {/* Transaction List */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icon icon="mdi:format-list-bulleted" size={20} />
-            Daftar Transaksi ({filteredTransactions.length})
-          </h3>
-        </div>
-
-        {filteredTransactions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', opacity: 0.7 }}>
-            <Icon icon="mdi:file-document-outline" size={48} color="var(--color-text)" />
-            <p style={{ marginTop: '1rem', fontSize: '1rem' }}>
-              {transactions.length === 0
-                ? 'Belum ada transaksi. Klik tombol "Transaksi Baru" untuk menambah.'
-                : 'Tidak ada transaksi yang sesuai dengan filter.'}
-            </p>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Tipe</th>
-                  <th>Kategori</th>
-                  <th>Deskripsi</th>
-                  <th style={{ textAlign: 'right' }}>Jumlah</th>
-                  <th style={{ textAlign: 'center' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {formatDate(transaction.date)}
+                return (
+                  <tr key={tx.id}>
+                    <td style={{ whiteSpace: 'nowrap', fontWeight: 500, color: 'var(--color-text-main)' }}>
+                      {formattedDate}
                     </td>
                     <td>
-                      <span className={`badge ${transaction.type === 'INCOME' ? 'badge-success' : 'badge-error'}`}>
-                        {transaction.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: 'var(--radius-full)',
+                            backgroundColor: isIncome ? 'var(--color-success-bg)' : 'var(--color-error-bg)',
+                            color: isIncome ? 'var(--color-success)' : 'var(--color-error)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Icon icon={isIncome ? 'mdi:arrow-down' : 'mdi:arrow-up'} size={18} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>
+                            {tx.description || tx.category_name || '-'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            Kategori: {tx.category_name || 'Umum'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`table-badge ${isIncome ? 'income' : 'expense'}`}>
+                        {isIncome ? 'Pemasukan' : 'Pengeluaran'}
                       </span>
                     </td>
-                    <td>{transaction.category_name || '-'}</td>
-                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {transaction.description || '-'}
+                    <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <span style={{ color: isIncome ? 'var(--color-success)' : 'var(--color-text-main)' }}>
+                        {isIncome ? '+' : '-'} {formatRupiah(tx.amount)}
+                      </span>
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: '600', color: transaction.type === 'INCOME' ? 'var(--color-success)' : 'var(--color-error)' }}>
-                      {formatRupiah(transaction.amount)}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '4px' }}>
                         <button
-                          onClick={() => handleEdit(transaction)}
-                          className="btn-icon"
-                          title="Edit"
+                          className="action-icon-btn"
+                          onClick={() => handleOpenEdit(tx)}
+                          title="Edit transaksi"
                         >
-                          <Icon icon="mdi:pencil" size={18} />
+                          <Icon icon="mdi:pencil-outline" size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(transaction.id)}
-                          className="btn-icon btn-icon-danger"
-                          title="Hapus"
+                          className="action-icon-btn delete"
+                          onClick={() => handleOpenDelete(tx)}
+                          title="Hapus transaksi"
                         >
-                          <Icon icon="mdi:delete" size={18} />
+                          <Icon icon="mdi:trash-can-outline" size={18} />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Table Pagination Footer */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            borderTop: '1px solid var(--color-border-light)',
+            fontSize: '0.85rem',
+            color: 'var(--color-text-muted)'
+          }}>
+            <div>
+              Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredTransactions.length)} - {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} dari {filteredTransactions.length} transaksi
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-modal-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                ← Sebelumnya
+              </button>
+              <button
+                className="btn-modal-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Berikutnya →
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Transaction Modal (Add / Edit) */}
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSaveTransaction}
+        initialData={editingTransaction}
+        isEditing={!!editingTransaction}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalState.isOpen}
+        title="Hapus Transaksi Ini?"
+        description={`Tindakan ini tidak dapat dibatalkan. Transaksi sebesar ${formatRupiah(deleteModalState.transaction?.amount)} (${deleteModalState.transaction?.description || deleteModalState.transaction?.category_name}) akan dihapus secara permanen.`}
+        onCancel={() => setDeleteModalState({ isOpen: false, transaction: null, loading: false })}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteModalState.loading}
+      />
     </div>
   );
 };

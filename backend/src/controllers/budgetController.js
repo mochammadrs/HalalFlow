@@ -40,17 +40,17 @@ exports.updateBudgetSettings = async (req, res, next) => {
 
   try {
     const { rows } = await db.query(
-      'UPDATE budget_settings SET percent_tabungan = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2 RETURNING *',
-      [percent_tabungan, req.user.id]
+      `INSERT INTO budget_settings (user_id, percent_zakat, percent_tabungan, updated_at)
+       VALUES ($1, 2.50, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id)
+       DO UPDATE SET percent_tabungan = EXCLUDED.percent_tabungan, updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [req.user.id, percent_tabungan]
     );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Pengaturan tidak ditemukan' });
-    }
 
     res.status(200).json(rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('Error updating budget settings:', err);
     res.status(500).send('Server error');
   }
 };
@@ -59,7 +59,7 @@ exports.updateBudgetSettings = async (req, res, next) => {
 // @route   POST /api/v1/budget/calculate
 // @access  Private
 exports.calculateBudget = async (req, res, next) => {
-  const { pemasukan } = req.body; // Ambil jumlah pemasukan dari user
+  const { pemasukan, percent_tabungan } = req.body; // Ambil jumlah pemasukan dan opsi persentase
 
   if (!pemasukan || pemasukan <= 0) {
     return res.status(400).json({ message: 'Jumlah pemasukan tidak valid' });
@@ -67,19 +67,24 @@ exports.calculateBudget = async (req, res, next) => {
 
   try {
     // 1. Ambil dulu pengaturan user (zakat & tabungan)
-    const { rows } = await db.query(
+    let { rows } = await db.query(
       'SELECT percent_zakat, percent_tabungan FROM budget_settings WHERE user_id = $1',
       [req.user.id]
     );
 
     if (rows.length === 0) {
-      // Seharusnya ini tidak terjadi (karena getBudgetSettings sudah membuatkan)
-      return res.status(404).json({ message: 'Pengaturan user tidak ditemukan' });
+      const newSettings = await db.query(
+        'INSERT INTO budget_settings (user_id, percent_zakat, percent_tabungan) VALUES ($1, 2.50, 20.00) RETURNING *',
+        [req.user.id]
+      );
+      rows = newSettings.rows;
     }
 
     const settings = rows[0];
-    const pZakat = parseFloat(settings.percent_zakat);
-    const pTabungan = parseFloat(settings.percent_tabungan);
+    const pZakat = parseFloat(settings.percent_zakat) || 2.5;
+    const pTabungan = percent_tabungan !== undefined 
+      ? parseFloat(percent_tabungan) 
+      : (parseFloat(settings.percent_tabungan) || 20);
 
     // 2. Lakukan perhitungan
     const alokasiZakat = (pZakat / 100) * pemasukan;

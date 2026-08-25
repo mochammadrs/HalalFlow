@@ -1,264 +1,379 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import dashboardService from '../services/dashboardService';
-import AuthContext from '../context/AuthContext';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
+import transactionService from '../services/transactionService';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+} from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
 import Icon from '../components/Icon';
+import EmptyState from '../components/EmptyState';
+import TransactionModal from '../components/TransactionModal';
+import { useTheme } from '../context/ThemeContext';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
-const formatRupiah = (angka) => {
+const formatRupiah = (number) => {
+  const val = Number(number) || 0;
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
-  }).format(angka);
+    maximumFractionDigits: 0,
+  }).format(val);
 };
 
-// SummaryCard Component
-const SummaryCard = ({ title, icon, value, color }) => (
-  <div className="summary-card" style={color ? { background: color } : {}}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      <span style={{ fontSize: '1.5rem' }}>
-        <Icon icon={icon} size={24} color="inherit" />
-      </span>
-      <h3>{title}</h3>
-    </div>
-    <div className="value">{value}</div>
-  </div>
-);
-
-// ExpenseChart Component
-const ExpenseChart = ({ data }) => {
-  if (!data || data.labels.length === 0) {
-    return (
-      <div className="card">
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Icon icon="mdi:chart-pie" size={24} />
-          Pengeluaran per Kategori
-        </h3>
-        <p style={{ textAlign: 'center', color: 'var(--color-text)', opacity: 0.7 }}>
-          Belum ada data pengeluaran bulan ini untuk ditampilkan di chart.
-        </p>
-      </div>
-    );
+const getCategoryIconInfo = (name, type) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('makan') || n.includes('minum') || n.includes('kuliner') || n.includes('food') || n.includes('restoran')) {
+    return { icon: 'mdi:silverware-fork-knife', bg: '#E8F5EE', color: '#0F5238' };
   }
-
-  return (
-    <div className="card">
-      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Icon icon="mdi:chart-pie" size={24} />
-        Pengeluaran per Kategori
-      </h3>
-      <div style={{ maxWidth: '500px', margin: '0 auto', position: 'relative' }}>
-        <Pie 
-          data={data}
-          options={{
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: {
-                  color: 'var(--color-text)',
-                  font: {
-                    size: 13,
-                    weight: '600'
-                  },
-                  padding: 15,
-                  usePointStyle: true,
-                  pointStyle: 'circle',
-                  boxWidth: 12,
-                  boxHeight: 12
-                }
-              },
-              tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                titleColor: '#FFFFFF',
-                bodyColor: '#FFFFFF',
-                borderColor: 'var(--color-primary)',
-                borderWidth: 1,
-                padding: 12,
-                titleFont: {
-                  size: 13,
-                  weight: 'bold'
-                },
-                bodyFont: {
-                  size: 12
-                },
-                displayColors: true,
-                callbacks: {
-                  label: function(context) {
-                    return context.label + ': ' + formatRupiah(context.parsed);
-                  }
-                }
-              }
-            }
-          }}
-        />
-      </div>
-    </div>
-  );
+  if (n.includes('trans') || n.includes('bensin') || n.includes('ojek') || n.includes('mobil') || n.includes('motor')) {
+    return { icon: 'mdi:car-side', bg: '#FEF3C7', color: '#B45309' };
+  }
+  if (n.includes('zakat') || n.includes('infaq') || n.includes('sedekah') || n.includes('donasi')) {
+    return { icon: 'mdi:hand-heart', bg: '#E0F2FE', color: '#0284C7' };
+  }
+  if (n.includes('belanja') || n.includes('shopping') || n.includes('pasar') || n.includes('supermarket')) {
+    return { icon: 'mdi:shopping-outline', bg: '#FCE7F3', color: '#DB2777' };
+  }
+  if (n.includes('gaji') || n.includes('salary') || n.includes('upah') || n.includes('income')) {
+    return { icon: 'mdi:cash-multiple', bg: '#DCFCE7', color: '#16A34A' };
+  }
+  const isInc = String(type).toUpperCase() === 'INCOME';
+  if (isInc) {
+    return { icon: 'mdi:arrow-bottom-left', bg: '#E8F5EE', color: '#0F5238' };
+  }
+  return { icon: 'mdi:arrow-top-right', bg: '#FEE2E2', color: '#DC2626' };
 };
 
 const DashboardPage = () => {
-  const { user } = useContext(AuthContext);
+  const { isDark } = useTheme();
   const [summary, setSummary] = useState(null);
   const [chartData, setChartData] = useState(null);
+  const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [summaryRes, chartRes] = await Promise.all([
+      const [summaryRes, chartRes, txRes] = await Promise.all([
         dashboardService.getSummary(),
         dashboardService.getExpenseByCategory(),
+        transactionService.getTransactions(),
       ]);
 
       setSummary(summaryRes.data);
+      setRecentTransactions((txRes.data || []).slice(0, 5));
 
-      setChartData({
-        labels: chartRes.data.labels,
-        datasets: [
-          {
-            label: 'Pengeluaran',
-            data: chartRes.data.data,
-            backgroundColor: [
-              'rgba(45, 106, 79, 0.8)',     // Primary green
-              'rgba(233, 196, 106, 0.8)',   // Accent gold
-              'rgba(220, 53, 69, 0.8)',     // Error red
-              'rgba(64, 145, 108, 0.8)',    // Secondary green
-              'rgba(40, 167, 69, 0.8)',     // Success green
-              'rgba(255, 193, 7, 0.8)',     // Warning yellow
-              'rgba(23, 162, 184, 0.8)',    // Info cyan
-            ],
-            borderColor: [
-              'rgba(45, 106, 79, 1)',
-              'rgba(233, 196, 106, 1)',
-              'rgba(220, 53, 69, 1)',
-              'rgba(64, 145, 108, 1)',
-              'rgba(40, 167, 69, 1)',
-              'rgba(255, 193, 7, 1)',
-              'rgba(23, 162, 184, 1)',
-            ],
-            borderWidth: 2,
-          },
-        ],
-      });
-
-      setLoading(false);
+      // Doughnut Chart Data
+      if (chartRes.data && chartRes.data.labels && chartRes.data.labels.length > 0) {
+        setChartData({
+          labels: chartRes.data.labels,
+          datasets: [
+            {
+              data: chartRes.data.data,
+              backgroundColor: [
+                '#10B981',
+                '#E9C46A',
+                '#EF4444',
+                '#3B82F6',
+                '#8B5CF6',
+                '#F59E0B',
+                '#06B6D4',
+              ],
+              borderColor: isDark ? '#17201B' : '#FFFFFF',
+              borderWidth: 2,
+              hoverOffset: 4,
+            },
+          ],
+        });
+      } else {
+        setChartData(null);
+      }
     } catch (err) {
-      console.error('Gagal mengambil data dashboard:', err);
-      setError('Gagal memuat data dashboard. Silakan coba lagi.');
+      console.error('Error fetching dashboard data:', err);
+      setError('Gagal memuat data dashboard. Pastikan server backend aktif.');
+    } finally {
       setLoading(false);
     }
-  };
+  }, [isDark]);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    if (user && isMounted) {
-      fetchDashboardData();
-    } else if (!user) {
-      setLoading(false);
-    }
-    
+    fetchDashboardData();
+
+    const handleTxUpdate = () => fetchDashboardData();
+    window.addEventListener('halalflow:transaction-updated', handleTxUpdate);
     return () => {
-      isMounted = false;
+      window.removeEventListener('halalflow:transaction-updated', handleTxUpdate);
     };
-  }, [user]);
+  }, [fetchDashboardData]);
+
+  const handleCreateTransaction = async (data) => {
+    await transactionService.createTransaction(
+      data.date,
+      data.amount,
+      data.type,
+      data.category_id,
+      data.description
+    );
+    fetchDashboardData();
+    window.dispatchEvent(new CustomEvent('halalflow:transaction-updated'));
+  };
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <div className="spinner"></div>
-        <p style={{ marginTop: '1rem' }}>Memuat dashboard...</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          border: '3px solid var(--color-border)',
+          borderTopColor: 'var(--color-primary-container)',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Memuat ringkasan keuangan...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="alert alert-error">
-        <span className="alert-icon">
-          <Icon icon="mdi:alert-circle" size={20} />
-        </span>
-        <div>
-          <strong>Error:</strong> {error}
-          <button 
-            onClick={fetchDashboardData} 
-            className="btn btn-primary"
-            style={{ marginTop: '1rem' }}
-          >
-            Coba Lagi
-          </button>
-        </div>
+      <div className="form-error-alert" style={{ margin: '24px 0' }}>
+        <Icon icon="mdi:alert-circle-outline" size={20} />
+        <span>{error}</span>
       </div>
     );
   }
 
-  if (!user) {
-    return <div className="info">Silakan login untuk melihat dashboard.</div>;
-  }
-
-  const balance = summary?.total_income - summary?.total_expense || 0;
+  const totalIncome = summary ? summary.total_income : 0;
+  const totalExpense = summary ? summary.total_expense : 0;
+  const netWorth = summary ? summary.balance : 0;
+  const infaqEstimate = totalIncome * 0.025;
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Icon icon="mdi:chart-line" size={28} />
-          Dashboard HalalFlow
-        </h1>
-        <p style={{ color: 'var(--color-text)', opacity: 0.8 }}>
-          Selamat datang, <strong>{user.full_name || user.email}</strong>! Berikut ringkasan keuangan Anda.
-        </p>
-      </div>
-
-      {/* Summary Cards Grid */}
-      {summary && (
-        <div className="grid grid-3">
-          <SummaryCard
-            title="Total Pemasukan"
-            value={formatRupiah(summary.total_income)}
-            icon="mdi:arrow-bottom-left"
-            color="linear-gradient(135deg, #2D6A4F 0%, rgba(45, 106, 79, 0.7) 100%)"
-          />
-          <SummaryCard
-            title="Total Pengeluaran"
-            value={formatRupiah(summary.total_expense)}
-            icon="mdi:arrow-top-right"
-            color="linear-gradient(135deg, #DC3545 0%, rgba(220, 53, 69, 0.7) 100%)"
-          />
-          <SummaryCard
-            title="Saldo"
-            value={formatRupiah(balance)}
-            icon={balance >= 0 ? "mdi:check-circle" : "mdi:alert-circle"}
-            color={balance >= 0 
-              ? "linear-gradient(135deg, #28A745 0%, rgba(40, 167, 69, 0.7) 100%)"
-              : "linear-gradient(135deg, #FFC107 0%, rgba(255, 193, 7, 0.7) 100%)"
-            }
-          />
+      {/* 1. Bento Grid - Top 3 Metric Cards */}
+      <div className="dashboard-grid-hero">
+        {/* Metric 1: Total Saldo Kas Bersih (Hero Card) */}
+        <div className="hero-balance-card">
+          <div className="hero-balance-left">
+            <span className="hero-balance-label">TOTAL SALDO KAS BERSIH</span>
+            <div className="hero-balance-amount">
+              {formatRupiah(netWorth)}
+            </div>
+            <div className="hero-balance-badge">
+              <Icon icon="mdi:leaf" size={14} color="var(--color-accent)" />
+              <span>Finansial Sehat & Syariah</span>
+            </div>
+          </div>
+          <div className="hero-balance-actions">
+            <button 
+              className="hero-quick-btn"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Icon icon="mdi:plus" size={18} />
+              <span>Catat Transaksi</span>
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* Expense Chart */}
-      <div style={{ marginTop: '2rem' }}>
-        <ExpenseChart data={chartData} />
+        {/* Metric 2: Total Pemasukan */}
+        <div className="card-white metric-card">
+          <div className="metric-header">
+            <span className="metric-title">
+              TOTAL PEMASUKAN
+            </span>
+            <div className="metric-icon-box income">
+              <Icon icon="mdi:arrow-down" size={18} />
+            </div>
+          </div>
+          <div>
+            <div className="metric-value" style={{ color: 'var(--color-success)' }}>
+              {formatRupiah(totalIncome)}
+            </div>
+            <span className="metric-sub">Bulan Ini</span>
+          </div>
+        </div>
+
+        {/* Metric 3: Total Pengeluaran */}
+        <div className="card-white metric-card">
+          <div className="metric-header">
+            <span className="metric-title">
+              TOTAL PENGELUARAN
+            </span>
+            <div className="metric-icon-box expense">
+              <Icon icon="mdi:arrow-up" size={18} />
+            </div>
+          </div>
+          <div>
+            <div className="metric-value" style={{ color: 'var(--color-error)' }}>
+              {formatRupiah(totalExpense)}
+            </div>
+            <span className="metric-sub">Sisa Kas: {formatRupiah(netWorth)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <button 
-          onClick={fetchDashboardData} 
-          className="btn btn-primary"
-        >
-          <Icon icon="mdi:refresh" size={18} style={{ marginRight: '0.5rem' }} />
-          Refresh Data
-        </button>
+      {/* 2. Main 2-Column Section */}
+      <div className="dashboard-main-columns">
+        {/* Left Column: Transaksi Terkini */}
+        <div className="dashboard-col">
+          <div className="card-white" style={{ padding: '22px' }}>
+            <div className="section-header" style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon icon="mdi:history" size={22} color="var(--color-primary-container)" />
+                <h2 className="section-title">Transaksi Terkini</h2>
+              </div>
+              <Link to="/transactions" className="btn-table-action" style={{ textDecoration: 'none', fontSize: '0.82rem' }}>
+                Lihat Semua ({recentTransactions.length}) →
+              </Link>
+            </div>
+
+            {recentTransactions.length === 0 ? (
+              <EmptyState
+                title="Belum Ada Transaksi"
+                description="Catat transaksi pemasukan atau pengeluaran pertama Anda."
+                actionLabel="Catat Transaksi"
+                onAction={() => setIsAddModalOpen(true)}
+              />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {recentTransactions.map((tx) => {
+                  const isIncome = String(tx.type).toUpperCase() === 'INCOME';
+                  const iconInfo = getCategoryIconInfo(tx.category_name, tx.type);
+                  const formattedDate = new Date(tx.date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                  });
+
+                  return (
+                    <div key={tx.id} className="recent-tx-item">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '10px',
+                            backgroundColor: isDark ? 'var(--color-surface-dim)' : iconInfo.bg,
+                            color: iconInfo.color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Icon icon={iconInfo.icon} size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)' }}>
+                            {tx.description || tx.category_name || 'Transaksi'}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                            {tx.category_name || 'Umum'} • {formattedDate}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isIncome ? 'var(--color-success)' : 'var(--color-text-main)' }}>
+                        {isIncome ? `+ ${formatRupiah(tx.amount)}` : `- ${formatRupiah(tx.amount)}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Distribusi Pengeluaran & Zakat Card */}
+        <div className="dashboard-col">
+          {/* Distribusi Pengeluaran Card */}
+          <div className="card-white" style={{ padding: '22px' }}>
+            <div className="section-header" style={{ marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon icon="mdi:chart-donut" size={20} color="var(--color-primary-container)" />
+                <h2 className="section-title">Distribusi Pengeluaran</h2>
+              </div>
+            </div>
+
+            {chartData ? (
+              <div style={{ maxWidth: '230px', margin: '0 auto', position: 'relative' }}>
+                <Doughnut
+                  data={chartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '68%',
+                    plugins: {
+                      legend: {
+                        position: 'bottom',
+                        labels: {
+                          boxWidth: 8,
+                          padding: 8,
+                          color: isDark ? '#C5CEC8' : '#404943',
+                          font: { family: 'Inter', size: 10 },
+                        },
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx) => ` ${ctx.label}: ${formatRupiah(ctx.parsed)}`,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '20px 0', fontSize: '0.82rem' }}>
+                Belum ada data pengeluaran kategori bulan ini.
+              </p>
+            )}
+          </div>
+
+          {/* Zakat & Infaq Sunnah Card */}
+          <div className="zakat-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon icon="mdi:hand-heart" size={20} color="var(--color-accent-dark)" />
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-text-main)' }}>
+                  Alokasi Zakat Penghasilan
+                </span>
+              </div>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-accent-dark)', backgroundColor: 'var(--color-accent-container)', padding: '2px 8px', borderRadius: '999px' }}>
+                2.5% Nisab
+              </span>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-body)', marginBottom: '10px' }}>
+              Estimasi kewajiban zakat dari pemasukan bulan ini:
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                {formatRupiah(infaqEstimate)}
+              </span>
+              <Link to="/planner" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'none' }}>
+                Kalkulator Lengkap →
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Global Transaction Modal */}
+      <TransactionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleCreateTransaction}
+      />
     </div>
   );
 };

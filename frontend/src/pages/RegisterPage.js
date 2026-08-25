@@ -1,147 +1,264 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import Icon from '../components/Icon';
+import Logo from '../components/Logo';
 
 const RegisterPage = () => {
-  const [full_name, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState(null);
-  const [success, setSuccess] = useState(false);
-
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setErrors(null);
-    setLoading(true);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreeTerms: false,
+  });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { fullName, email, password, confirmPassword, agreeTerms } = formData;
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setError('Semua kolom formulir harus diisi');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Kata sandi minimal 6 karakter');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Konfirmasi kata sandi tidak cocok');
+      return;
+    }
+
+    if (!agreeTerms) {
+      setError('Anda harus menyetujui Syarat & Ketentuan HalalFlow');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await authService.register(full_name, email, password);
-      setLoading(false);
-      setSuccess(true);
+      await authService.register(fullName, email, password);
+      setSuccess('Pendaftaran berhasil! Mengalihkan ke halaman login...');
       setTimeout(() => {
         navigate('/login');
       }, 1500);
     } catch (err) {
+      console.error('Register error:', err);
+      setError(
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.message ||
+        'Gagal mendaftar. Silakan coba lagi.'
+      );
+    } finally {
       setLoading(false);
-      if (err.response && err.response.data && err.response.data.errors) {
-        setErrors(err.response.data.errors);
-      } else {
-        setErrors([{ msg: err.response?.data?.message || 'Registrasi gagal.' }]);
-      }
     }
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        {/* Header Section */}
-        <div className="auth-header">
-          <div className="auth-logo">
-            <Icon icon="mdi:leaf" size={48} color="var(--color-primary)" />
-          </div>
-          <h1 className="auth-title">Buat Akun Baru</h1>
-          <p className="auth-subtitle">Mulai mengelola keuangan dengan bijak</p>
+    <div className="auth-split-wrapper">
+      {/* Left Side: Branding */}
+      <div className="auth-hero-side">
+        <div className="auth-hero-brand">
+          <Logo size="lg" variant="light" />
         </div>
 
-        {/* Form Section */}
-        {!success ? (
-          <form onSubmit={handleRegister} noValidate className="auth-form">
+        <div className="auth-hero-content">
+          <h1 className="auth-hero-headline">
+            Mulai Perjalanan Keuangan yang Berkah & Terencana Hari Ini.
+          </h1>
+          
+          <div className="auth-feature-pills">
+            <div className="auth-feature-item">
+              <Icon icon="mdi:check-decagram" size={22} color="var(--color-accent)" />
+              <span>100% Bebas Riba & Prinsip Syariah Terjaga</span>
+            </div>
+            <div className="auth-feature-item">
+              <Icon icon="mdi:chart-arc" size={22} color="var(--color-accent)" />
+              <span>Monitoring Budgeting Real-time & Akurat</span>
+            </div>
+            <div className="auth-feature-item">
+              <Icon icon="mdi:calculator-variant" size={22} color="var(--color-accent)" />
+              <span>Kalkulator Zakat Maal Otomatis Sesuai Nisab</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ zIndex: 1, color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem' }}>
+          © 2026 HalalFlow. Aplikasi Manajemen Keuangan Islami Terpercaya.
+        </div>
+      </div>
+
+      {/* Right Side: Register Form */}
+      <div className="auth-form-side">
+        <div className="auth-card-box">
+          <div className="auth-tabs">
+            <button 
+              className="auth-tab-btn" 
+              type="button"
+              onClick={() => navigate('/login')}
+            >
+              Masuk (Login)
+            </button>
+            <button className="auth-tab-btn active" type="button">
+              Daftar Akun Baru
+            </button>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-text-main)', marginBottom: '4px' }}>
+              Buat Akun HalalFlow
+            </h2>
+            <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+              Lengkapi data untuk memulai pencatatan keuangan Anda.
+            </p>
+          </div>
+
+          {error && (
+            <div className="form-error-alert">
+              <Icon icon="mdi:alert-circle-outline" size={18} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="form-success-alert">
+              <Icon icon="mdi:check-circle-outline" size={18} />
+              <span>{success}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="full_name">Nama Lengkap</label>
+              <label className="form-label">Nama Lengkap</label>
               <input
-                id="full_name"
                 type="text"
-                value={full_name}
-                onChange={(e) => setFullName(e.target.value)}
+                name="fullName"
+                className="form-input"
+                placeholder="Contoh: Muhammad Rizky"
+                value={fullName}
+                onChange={handleChange}
                 required
-                placeholder="Masukkan nama lengkap Anda"
-                autoFocus
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Alamat Email</label>
+              <label className="form-label">Alamat Email</label>
               <input
-                id="email"
                 type="email"
+                name="email"
+                className="form-input"
+                placeholder="nama@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleChange}
                 required
-                placeholder="nama@example.com"
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Buat password yang kuat"
-              />
-              <p className="password-hint">Gunakan kombinasi huruf, angka, dan simbol untuk keamanan maksimal</p>
+              <label className="form-label">Kata Sandi (Minimal 6 karakter)</label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingRight: '42px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                  }}
+                  tabIndex="-1"
+                >
+                  <Icon icon={showPassword ? 'mdi:eye-off' : 'mdi:eye'} size={18} />
+                </button>
+              </div>
             </div>
 
-            {errors && (
-              <div className="alert alert-error">
-                <span className="alert-icon">
-                  <Icon icon="mdi:alert-circle" size={20} />
+            <div className="form-group">
+              <label className="form-label">Konfirmasi Kata Sandi</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                className="form-input"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px', fontSize: '0.85rem' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', color: 'var(--color-text-body)' }}>
+                <input
+                  type="checkbox"
+                  name="agreeTerms"
+                  checked={agreeTerms}
+                  onChange={handleChange}
+                  style={{ marginTop: '3px' }}
+                />
+                <span>
+                  Saya menyetujui <strong>Syarat & Ketentuan</strong> serta kebijakan privasi HalalFlow.
                 </span>
-                <div>
-                  {errors.map((error, index) => (
-                    <p key={index} className="alert-message">{error.msg}</p>
-                  ))}
-                </div>
-              </div>
-            )}
+              </label>
+            </div>
 
             <button
               type="submit"
+              className="btn-auth-submit"
               disabled={loading}
-              className="btn btn-primary btn-login"
             >
               {loading ? (
                 <>
-                  <span className="spinner-mini"></span>
-                  Sedang mendaftar...
+                  <Icon icon="mdi:loading" size={18} className="animate-spin" />
+                  <span>Mendaftarkan Akun...</span>
                 </>
               ) : (
                 <>
-                  <Icon icon="mdi:account-plus" size={18} style={{ marginRight: '0.5rem' }} />
-                  Daftar
+                  <span>Daftar Akun Sekarang</span>
+                  <Icon icon="mdi:arrow-right" size={18} />
                 </>
               )}
             </button>
           </form>
-        ) : (
-          <div className="alert alert-success" style={{ marginTop: '2rem' }}>
-            <span className="alert-icon">
-              <Icon icon="mdi:check-circle" size={20} />
-            </span>
-            <div>
-              <p className="alert-message" style={{ fontWeight: '600' }}>Registrasi berhasil!</p>
-              <p className="alert-message">Silakan tunggu, Anda akan dialihkan ke halaman login...</p>
-            </div>
-          </div>
-        )}
 
-        {/* Footer Section */}
-        {!success && (
-          <div className="auth-footer">
-            <p className="auth-footer-text">
-              Sudah punya akun?{' '}
-              <Link to="/login" className="auth-link">
-                Masuk di sini
-              </Link>
-            </p>
+          <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+            Sudah memiliki akun?{' '}
+            <Link to="/login" style={{ color: 'var(--color-primary-container)', fontWeight: 700 }}>
+              Masuk di sini
+            </Link>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

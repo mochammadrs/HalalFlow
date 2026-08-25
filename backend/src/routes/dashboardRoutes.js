@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getSummary,
   getExpenseByCategory,
+  getMonthlyTrend,
 } = require('../controllers/dashboardController');
 
 // Impor "Penjaga Pintu" (Middleware) kita
@@ -17,5 +18,8 @@ router.get('/summary', getSummary);
 
 // GET /api/v1/dashboard/expense-by-category
 router.get('/expense-by-category', getExpenseByCategory);
+
+// GET /api/v1/dashboard/monthly-trend
+router.get('/monthly-trend', getMonthlyTrend);
 
 module.exports = router;
