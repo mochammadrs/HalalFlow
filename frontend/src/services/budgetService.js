@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL dasar API kita (dari .env atau default)
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api/v1';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:5001/api/v1');
 
 // Fungsi untuk MENGAMBIL pengaturan
 const getSettings = () => {

@@ -47,6 +47,10 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/transactions', transactionRoutes);
 
 // 6. Jalankan Server
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

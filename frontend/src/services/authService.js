@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Ambil URL dasar API kita dari file .env
 // (Kita harus buat file .env di frontend nanti)
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api/v1';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:5001/api/v1');
 
 // Fungsi untuk Register
 const register = (full_name, email, password) => {
