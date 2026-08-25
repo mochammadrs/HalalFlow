@@ -4,9 +4,13 @@ require('dotenv').config();
 // Buat koneksi pool: mendukung DATABASE_URL (1 baris) atau variabel terpisah
 const isProduction = process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true';
 
-const poolConfig = process.env.DATABASE_URL
+const dbUrl = process.env.DATABASE_URL
+  ? process.env.DATABASE_URL.replace(/&?channel_binding=[^&]*/g, '')
+  : null;
+
+const poolConfig = dbUrl
   ? {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbUrl,
       ssl: { rejectUnauthorized: false },
     }
   : {
