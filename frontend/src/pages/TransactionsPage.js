@@ -341,7 +341,7 @@ const TransactionsPage = () => {
           description={searchQuery || filterType !== 'ALL' || selectedCategory !== 'ALL'
             ? 'Tidak ada transaksi yang cocok dengan kriteria filter saat ini.'
             : 'Mulai catat transaksi pemasukan atau pengeluaran Anda.'}
-          actionLabel="+ Tambah Transaksi"
+          actionLabel="Tambah Transaksi"
           onAction={handleOpenAdd}
         />
       ) : (

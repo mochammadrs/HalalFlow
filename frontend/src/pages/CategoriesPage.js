@@ -255,7 +255,7 @@ const CategoriesPage = () => {
         <EmptyState
           title={`Belum Ada Kategori ${activeTab === 'expense' ? 'Pengeluaran' : 'Pemasukan'}`}
           description={`Buat kategori baru untuk mengelompokkan ${activeTab === 'expense' ? 'pengeluaran' : 'pemasukan'} Anda.`}
-          actionLabel="+ Tambah Kategori Sekarang"
+          actionLabel="Tambah Kategori Sekarang"
           onAction={handleOpenAdd}
         />
       ) : (
